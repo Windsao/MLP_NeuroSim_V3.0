@@ -53,4 +53,5 @@ double InvMeasuredLTD(double conductance, int maxNumLevel, std::vector<double>& 
 double getParamA(double NL);
 double NonlinearConductance(double C, double NL, double Vw, double Vr, double V);
 
+int find_nearest(std::vector<double>& vec, double value);
 #endif

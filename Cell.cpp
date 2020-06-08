@@ -39,10 +39,20 @@
 #include <ctime>
 #include <iostream>
 #include <math.h>
+#include <random>
+#include <time.h> 
+
 #include "formula.h"
 #include "Array.h"
 #include "Cell.h"
+#include "Param.h"
+using namespace std;
 
+//Global variable
+extern Param *param;
+extern std::vector<double> sg_G;
+extern std::vector<double> sg_dG;
+extern std::vector< std::vector<double> > sg_cdf;
 
 /* General eNVM */
 void AnalogNVM::WriteEnergyCalculation(double wireCapCol) {
@@ -259,8 +269,11 @@ void IdealDevice::Write(double deltaWeightNormalized, double weight, double minW
 /* Real Device */
 RealDevice::RealDevice(int x, int y) {
 	this->x = x; this->y = y;	// Cell location: x (column) and y (row) start from index 0
-	maxConductance = 3.8462e-8;		// Maximum cell conductance (S)
-	minConductance = 3.0769e-9;	// Minimum cell conductance (S)
+	// maxConductance = 3.8462e-8;		// Maximum cell conductance (S)
+	maxConductance = 2.0105779419977334e-5;
+	// minConductance = 3.0769e-9;	// Minimum cell conductance (S)
+	minConductance = 1.59547021707001e-6;
+
 	avgMaxConductance = maxConductance; // Average maximum cell conductance (S)
 	avgMinConductance = minConductance; // Average minimum cell conductance (S)
 	conductance = minConductance;	// Current conductance (S) (dynamic variable)
@@ -272,7 +285,7 @@ RealDevice::RealDevice(int x, int y) {
 	writePulseWidthLTP = 300e-6;	// Write pulse width (s) for LTP or weight increase
 	writePulseWidthLTD = 300e-6;	// Write pulse width (s) for LTD or weight decrease
 	writeEnergy = 0;	// Dynamic variable for calculation of write energy (J)
-	maxNumLevelLTP = 97;	// Maximum number of conductance states during LTP or weight increase
+	maxNumLevelLTP = 100;	// Maximum number of conductance states during LTP or weight increase
 	maxNumLevelLTD = 100;	// Maximum number of conductance states during LTD or weight decrease
 	numPulse = 0;	// Number of write pulses used in the most recent write operation (dynamic variable)
 	cmosAccess = true;	// True: Pseudo-crossbar (1T1R), false: cross-point
@@ -341,6 +354,7 @@ RealDevice::RealDevice(int x, int y) {
  
         heightInFeatureSize = cmosAccess? 4 : 2; // Cell height = 4F (Pseudo-crossbar) or 2F (cross-point)
         widthInFeatureSize = cmosAccess? (FeFET? 6 : 4) : 2; //// Cell width = 6F (FeFET) or 4F (Pseudo-crossbar) or 2F (cross-point)
+
 }
 
 double RealDevice::Read(double voltage) {	// Return read current (A)
@@ -367,26 +381,66 @@ void RealDevice::Write(double deltaWeightNormalized, double weight, double minWe
 		deltaWeightNormalized = deltaWeightNormalized/(maxWeight-minWeight);
 		deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTP);
 		numPulse = deltaWeightNormalized * maxNumLevelLTP;
-		if (nonlinearWrite) {
-			paramBLTP = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTP/paramALTP));
-			xPulse = InvNonlinearWeight(conductance, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-			conductanceNew = NonlinearWeight(xPulse+numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-		} else {
-			xPulse = (conductance - minConductance) / (maxConductance - minConductance) * maxNumLevelLTP;
-			conductanceNew = (xPulse+numPulse) / maxNumLevelLTP * (maxConductance - minConductance) + minConductance;
+		// if (nonlinearWrite) {
+		// 	paramBLTP = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTP/paramALTP));
+		// 	xPulse = InvNonlinearWeight(conductance, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+		// 	conductanceNew = NonlinearWeight(xPulse+numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+		// } else {
+		// 	xPulse = (conductance - minConductance) / (maxConductance - minConductance) * maxNumLevelLTP;
+		// 	conductanceNew = (xPulse+numPulse) / maxNumLevelLTP * (maxConductance - minConductance) + minConductance;
+		// }
+
+		// for (int i = 0; i < param->gBins; i++){
+		// 	printf("g = %.05f  ", sg_G[i]);
+		// }
+
+		for (int i = 0; i < numPulse; i++){
+			srand((unsigned)time(NULL)); 
+			// generate probability
+	    	double prob = rand() / double(RAND_MAX);
+    		//searches the array 'G_array' for the index of the value nearest to the input conductance 'G'
+    		int nearest_G_idx = find_nearest(sg_G, conductanceNew); 
+		    //searches the corresponding CDF array 
+    		int nearest_CDF_idx = find_nearest(sg_cdf[nearest_G_idx], prob); 
+    		// printf("nearest_CDF_idx = %d, cNew = %.05f\n", nearest_CDF_idx, conductanceNew);
+    		conductanceNew += sg_dG[nearest_CDF_idx]; 
 		}
+		if (numPulse != 0){
+			// FILE *fp = fopen("nToC.txt", "a");
+			// printf("%d, %.20f, %.20f\n", numPulse, conductanceNew, deltaWeightNormalized);
+			// fprintf(fp, "%d, %.20f, %.20f\n", numPulse, conductanceNew, deltaWeightNormalized);
+			// fclose(fp);
+		}	
 	} else {	// LTD
 		deltaWeightNormalized = deltaWeightNormalized/(maxWeight-minWeight);
 		deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTD);
 		numPulse = deltaWeightNormalized * maxNumLevelLTD;
-		if (nonlinearWrite) {
-			paramBLTD = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTD/paramALTD));
-			xPulse = InvNonlinearWeight(conductance, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-			conductanceNew = NonlinearWeight(xPulse+numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-		} else {
-			xPulse = (conductance - minConductance) / (maxConductance - minConductance) * maxNumLevelLTD;
-			conductanceNew = (xPulse+numPulse) / maxNumLevelLTD * (maxConductance - minConductance) + minConductance;
+		// if (nonlinearWrite) {
+		// 	paramBLTD = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTD/paramALTD));
+		// 	xPulse = InvNonlinearWeight(conductance, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+		// 	conductanceNew = NonlinearWeight(xPulse+numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+		// } else {
+		// 	xPulse = (conductance - minConductance) / (maxConductance - minConductance) * maxNumLevelLTD;
+		// 	conductanceNew = (xPulse+numPulse) / maxNumLevelLTD * (maxConductance - minConductance) + minConductance;
+		// }
+
+		for (int i = numPulse; i < 0; i++){
+			srand((unsigned)time(NULL)); 
+			// generate probability
+	    	double prob = rand() / double(RAND_MAX);
+    		//searches the array 'G_array' for the index of the value nearest to the input conductance 'G'
+    		int nearest_G_idx = find_nearest(sg_G, conductanceNew); 
+		    //searches the corresponding CDF array 
+    		int nearest_CDF_idx = find_nearest(sg_cdf[nearest_G_idx], prob); 
+    		// printf("nearest_CDF_idx = %d, cNew = %.05f\n", nearest_CDF_idx, conductanceNew);
+    		conductanceNew -= sg_dG[nearest_CDF_idx]; 
 		}
+
+		// if (numPulse != 0){
+		// 	FILE *fp = fopen("nToC.txt", "a");
+		// 	fprintf(fp, "%d, %.5f\n", numPulse, conductanceNew);
+		// 	fclose(fp);
+		// }	
 	}
 
 	/* Cycle-to-cycle variation */

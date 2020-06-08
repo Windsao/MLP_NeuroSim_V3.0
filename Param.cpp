@@ -39,6 +39,7 @@
 #include <string>
 #include "math.h"
 #include "Param.h"
+#include "formula.h"
 
 Param::Param() {
 	/* MNIST dataset */
@@ -49,7 +50,7 @@ Param::Param() {
 	numTrainImagesPerEpoch = 8000;	// # of training images per epoch
 	totalNumEpochs = 125;	// Total number of epochs
 	interNumEpochs = 1;		// Internal number of epochs (print out the results every interNumEpochs)
-	nInput = 400;     // # of neurons in input layer
+	nInput = 400;     // # of neurons in input laye
 	nHide = 100;      // # of neurons in hidden layer
 	nOutput = 10;     // # of neurons in output layer
 	alpha1 = 0.4;	// Learning rate for the weights from input to hidden layer
@@ -82,6 +83,10 @@ Param::Param() {
 	arrayWireWidth = 100;	// Array wire width (nm)
 	processNode = 32;	// Technology node (nm)
 	clkFreq = 2e9;		// Clock frequency (Hz)
- 
+
+    /* stochastic model param */
+	gBins = 100;
+	dgBins = 100;
+	
 }
 

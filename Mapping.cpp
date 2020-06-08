@@ -39,6 +39,11 @@
 #include <cstdio>
 #include <vector>
 #include <random>
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
 #include "Param.h"
 #include "Array.h"
 #include "NeuroSim.h"
@@ -47,6 +52,10 @@ extern Param *param;
 
 extern std::vector< std::vector<double> > weight1;
 extern std::vector< std::vector<double> > weight2;
+
+extern std::vector<double> sg_G;
+extern std::vector<double> sg_dG;
+extern std::vector< std::vector<double> > sg_cdf;
 
 extern Array *arrayIH;
 extern Array *arrayHO;
@@ -107,3 +116,51 @@ double DigitsToAlgorithm(int outputDigits /* output digits from ADC */, double p
     return ((double)outputDigits / param->pSumMaxHardware) * pSumMaxAlgorithm;
 }
 
+/* stochastic model function */
+void jumpTableInitialize(char* gFile, char* dgFile, char* cdfFile){
+    ifstream file;
+    /********read gtable *************/
+    file.open(gFile,ios::in);
+    if(file.fail())
+    {
+        cout<<"File_g does not exist"<<endl;
+        file.close();
+    }
+    else
+    {
+        for (int i = 0; i < param->gBins; i++){
+            file >> sg_G[i];
+        }
+        file.close();
+    }
+    /********read dgtable *************/
+    file.open(dgFile,ios::in);
+    if(file.fail())
+    {
+        cout<<"File_dG does not exist"<<endl;
+        file.close();
+    }
+    else
+    {
+        for (int i = 0; i < param->dgBins; i++){
+            file >> sg_dG[i];
+        }
+        file.close();
+    }
+    /********read cdftable *************/
+    file.open(cdfFile,ios::in);
+    if(file.fail())
+    {
+        cout<<"File_cdf does not exist"<<endl;
+        file.close();
+    }
+    else
+    {
+        for (int i = 0; i < param->gBins; i++){
+            for (int j = 0; j < param->dgBins; j++){
+                file >> sg_cdf[i][j];
+            }
+        }
+        file.close();
+    }
+}

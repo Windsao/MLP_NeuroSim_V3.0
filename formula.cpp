@@ -38,6 +38,10 @@
 
 #include <cmath>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
 
 /* Activation function */
 double sigmoid(double x) {
@@ -322,3 +326,24 @@ double NonlinearConductance(double C, double NL, double Vw, double Vr, double V)
 	return C_NL;
 }
 
+
+int find_nearest(std::vector<double>& vec, double value) {
+    double dis = 99999;
+    int loc = 0;
+    for (int i = 0; i < vec.size(); i++){
+        if (abs(vec[i] - value) < dis){
+            dis = abs(vec[i] - value);
+            loc = i;
+        }
+        if (vec[i] >= value){
+            break;
+        }
+    }
+    if (loc == vec.size()) { return -1; }
+
+
+    if (loc > 0 && abs(vec[loc - 1] - value) <= abs(vec[loc] - value)){
+        loc = loc - 1;
+    }
+    return loc;
+}

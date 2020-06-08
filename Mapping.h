@@ -43,5 +43,6 @@ void WeightInitialize();
 void WeightToConductance();
 int CurrentToDigits(double I, double Imax);
 double DigitsToAlgorithm(int outputDigits, double pSumMaxAlgorithm);
+void jumpTableInitialize(char* gFile, char* dgFile, char* cdfFile);
 
 #endif

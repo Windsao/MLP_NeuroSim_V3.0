@@ -37,6 +37,7 @@
 ********************************************************************************/
 
 #include <string>
+#include <vector>
 
 #ifndef PARAM_H_
 #define PARAM_H_
@@ -83,6 +84,11 @@ public:
 	double arrayWireWidth;	// Array wire width (nm)
 	int processNode;	// Technology node (nm)
 	double clkFreq;		// Clock frequency (Hz)
+
+	/* stochastic model param */
+	int gBins;
+	int dgBins;
+
 };
 
 #endif

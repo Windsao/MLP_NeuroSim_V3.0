@@ -102,6 +102,12 @@ momentumPrev1(param->nHide, std::vector<double>(param->nInput));
 std::vector< std::vector<double> >
 momentumPrev2(param->nOutput, std::vector<double>(param->nHide));
 
+/* stochastic model array */
+std::vector<double> sg_G(param->gBins);
+std::vector<double> sg_dG(param->dgBins);
+std::vector< std::vector<double> > 
+sg_cdf(param->gBins, std::vector<double>(param->dgBins));
+
 
 /* # of correct prediction */
 int correct = 0;
